@@ -1,0 +1,92 @@
+/*!
+ * Copyright (c) 2014-2026 Bjoern Kimminich & the OWASP Juice Shop contributors.
+ * SPDX-License-Identifier: MIT
+ */
+/*!
+ * Copyright (c) 2014-2026 Bjoern Kimminich & the OWASP Juice Shop contributors.
+ * SPDX-License-Identifier: MIT
+ */
+:host {
+  display: block;
+  margin: 3rem 4rem;
+}
+@media (max-width: 1500px) {
+  :host {
+    margin: 3rem 4rem;
+  }
+}
+@media (max-width: 900px) {
+  :host {
+    margin: 3rem;
+  }
+}
+@media (max-width: 600px) {
+  :host {
+    margin: 2rem 1rem;
+  }
+}
+
+.score-row {
+  -moz-column-gap: 1rem;
+       column-gap: 1rem;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  min-height: 120px;
+  row-gap: 0.5rem;
+}
+@media (max-width: 1500px) {
+  .score-row {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 900px) {
+  .score-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .score-row {
+    grid-template-columns: repeat(1, 1fr);
+  }
+}
+
+.challenges {
+  -moz-column-gap: 1rem;
+       column-gap: 1rem;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin-top: 2rem;
+  row-gap: 0.625rem;
+}
+@media (max-width: 1500px) {
+  .challenges {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 900px) {
+  .challenges {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .challenges {
+    grid-template-columns: repeat(1, 1fr);
+  }
+}
+
+.empty-challenges {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin: 0 2rem;
+  min-height: 20vh;
+}
+
+.loading-spinner-wrapper {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  padding: 4rem;
+  width: 100%;
+}/*# sourceMappingURL=score-board.component.css.map */

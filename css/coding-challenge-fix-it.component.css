@@ -1,0 +1,68 @@
+/*!
+ * Copyright (c) 2014-2026 Bjoern Kimminich & the OWASP Juice Shop contributors.
+ * SPDX-License-Identifier: MIT
+ */
+/*!
+ * Copyright (c) 2014-2026 Bjoern Kimminich & the OWASP Juice Shop contributors.
+ * SPDX-License-Identifier: MIT
+ */
+.controls-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.625rem 1rem;
+  background-color: var(--theme-background-darker);
+  border-radius: 8px;
+}
+
+.fix-toggles {
+  flex-wrap: wrap;
+}
+
+.changed-lines-toggle {
+  margin-left: auto;
+  font-size: 0.85rem;
+  color: var(--theme-text-fade-50);
+}
+
+.diff-host ::ng-deep .cm-editor {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--theme-text-fade-10);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+.diff-host ::ng-deep .cm-scroller {
+  max-height: 817px;
+  overflow-y: auto;
+}
+.diff-host ::ng-deep .cm-changedLine.cm-insertedLine {
+  background-color: rgba(0, 180, 0, 0.15);
+}
+.diff-host ::ng-deep .cm-changedLine.cm-deletedLine {
+  background-color: rgba(255, 0, 0, 0.15);
+}
+.diff-host ::ng-deep .cm-changedText.cm-insertedText {
+  background-color: rgba(0, 180, 0, 0.3);
+}
+.diff-host ::ng-deep .cm-changedText.cm-deletedText {
+  background-color: rgba(255, 0, 0, 0.3);
+}
+
+mat-card.accent-notification,
+mat-card.warn-notification {
+  border-radius: 8px;
+  border-left-width: 3px;
+  border-left-style: solid;
+}
+mat-card.accent-notification .mdc-card,
+mat-card.warn-notification .mdc-card {
+  font-size: 0.9rem;
+}
+
+mat-card.accent-notification {
+  border-left-color: var(--theme-accent);
+}
+
+mat-card.warn-notification {
+  border-left-color: var(--theme-warn);
+}/*# sourceMappingURL=coding-challenge-fix-it.component.css.map */

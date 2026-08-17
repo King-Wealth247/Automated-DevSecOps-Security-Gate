@@ -1,0 +1,189 @@
+/*!
+ * Copyright (c) 2014-2026 Bjoern Kimminich & the OWASP Juice Shop contributors.
+ * SPDX-License-Identifier: MIT
+ */
+/*!
+ * Copyright (c) 2014-2026 Bjoern Kimminich & the OWASP Juice Shop contributors.
+ * SPDX-License-Identifier: MIT
+ */
+h1 {
+  margin-bottom: 0.625rem;
+}
+
+h1 small {
+  color: rgba(0, 0, 0, 0.6);
+  font-size: 0.8em;
+  margin-left: 0.5rem;
+}
+
+.heading {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  font-size: x-large;
+  justify-content: center;
+  margin-bottom: 0.625rem;
+  padding: 0.5rem 1rem;
+}
+
+mat-table {
+  margin-bottom: 0.625rem;
+  table-layout: fixed;
+  width: 100%;
+}
+
+mat-header-row {
+  min-height: 48px !important;
+}
+
+mat-row {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0.625rem 0;
+  transition: background-color 0.2s ease;
+}
+
+mat-row:last-of-type {
+  border-bottom: 0 !important;
+}
+
+mat-row:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+mat-cell {
+  border: 0;
+}
+
+mat-cell,
+mat-footer-cell {
+  padding: 0.25rem;
+}
+
+mat-cell:first-of-type,
+mat-footer-cell:first-of-type {
+  padding-left: 0.25rem;
+}
+
+mat-cell:last-of-type,
+mat-footer-cell:last-of-type {
+  padding-right: 0.25rem;
+}
+
+.mat-column-image {
+  width: 20%;
+}
+
+.mat-column-product {
+  width: 35%;
+}
+
+.mat-column-quantity {
+  width: 16%;
+}
+
+.mat-column-price {
+  width: 16%;
+}
+
+.mat-column-remove {
+  width: 10%;
+}
+
+@media (max-width: 959.98px) {
+  .mat-column-image,
+  .mat-column-price,
+  .mat-column-product,
+  .mat-column-quantity,
+  .mat-column-remove {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 0.5rem;
+    width: 100%;
+  }
+}
+.img-thumbnail {
+  border-radius: 4px;
+  height: auto;
+  max-width: 80px;
+  transition: transform 0.2s ease;
+  border: var(--theme-thumbnail-border);
+  padding: 0.125rem;
+  box-sizing: border-box;
+}
+
+.img-thumbnail:hover {
+  transform: scale(1.05);
+}
+
+.mat-mdc-footer-cell {
+  font-size: 1.1em;
+  font-weight: 500;
+}
+
+.content-align {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+}
+
+.header-hidden {
+  display: none;
+}
+
+.cell-initial-font {
+  font-size: initial;
+}
+
+.quantity-controls {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.quantity-controls button {
+  color: rgba(0, 0, 0, 0.6);
+  transition: color 0.2s ease;
+}
+
+.quantity-controls button:hover {
+  color: rgba(0, 0, 0, 0.87);
+}
+
+.quantity-controls span {
+  min-width: 24px;
+  text-align: center;
+}
+
+#price {
+  font-size: large;
+  font-weight: 500;
+  margin-top: 0.625rem;
+  text-align: right;
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .img-thumbnail {
+    max-width: 70px;
+  }
+  #price {
+    font-size: medium;
+    margin-top: 0.5rem;
+  }
+  mat-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    width: 100%;
+  }
+}
+.far.fa-trash-alt {
+  color: rgba(0, 0, 0, 0.54);
+  transition: color 0.2s ease;
+}
+
+.far.fa-trash-alt:hover {
+  color: #f44336;
+}/*# sourceMappingURL=purchase-basket.component.css.map */

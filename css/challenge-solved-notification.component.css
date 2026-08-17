@@ -1,0 +1,76 @@
+/*!
+ * Copyright (c) 2014-2026 Bjoern Kimminich & the OWASP Juice Shop contributors.
+ * SPDX-License-Identifier: MIT
+ */
+/*!
+ * Copyright (c) 2014-2026 Bjoern Kimminich & the OWASP Juice Shop contributors.
+ * SPDX-License-Identifier: MIT
+ */
+.container {
+  font-size: 14px;
+  margin: 1.5rem;
+}
+
+mat-card {
+  margin-bottom: 0.625rem;
+}
+mat-card .notificationMessage {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+#closeButton {
+  float: right;
+}
+
+.icon-box {
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+.flag-box {
+  border-radius: 4px;
+  cursor: copy;
+  padding: 0.125rem 0.25rem;
+  transition: background-color 0.2s ease;
+}
+.flag-box:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.contents {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  justify-content: space-around;
+}
+
+.view-challenge-button {
+  align-items: center;
+  backdrop-filter: saturate(1.1);
+  border: 3px solid;
+  border-radius: 4px;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 15px;
+  font-weight: 500;
+  gap: 0.125rem;
+  height: 32px;
+  letter-spacing: normal;
+  padding: 0 0.625rem;
+  transition: background-color 0.15s ease;
+}
+.view-challenge-button mat-icon {
+  font-size: 18px;
+  height: 18px;
+  width: 18px;
+}
+.view-challenge-button:hover {
+  background-color: rgba(211, 211, 211, 0.04);
+  box-shadow: none;
+}
+.view-challenge-button:active {
+  transform: none;
+}/*# sourceMappingURL=challenge-solved-notification.component.css.map */

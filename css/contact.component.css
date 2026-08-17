@@ -1,0 +1,106 @@
+/*!
+ * Copyright (c) 2014-2026 Bjoern Kimminich & the OWASP Juice Shop contributors.
+ * SPDX-License-Identifier: MIT
+ */
+/*!
+ * Copyright (c) 2014-2026 Bjoern Kimminich & the OWASP Juice Shop contributors.
+ * SPDX-License-Identifier: MIT
+ */
+mat-card {
+  height: auto;
+  min-width: 320px;
+  width: 30%;
+}
+
+.form-container {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.feedback-hint {
+  margin-left: 0.25rem;
+}
+
+.rating-container {
+  align-items: center;
+  display: flex;
+  margin-bottom: 1rem;
+  margin-top: 1rem;
+}
+
+.rating-label {
+  float: left;
+  font-weight: 500;
+  margin-right: 0.5rem;
+}
+
+.captcha-info {
+  margin-bottom: 0.625rem;
+  margin-top: 0.625rem;
+}
+
+.captcha-label {
+  font-weight: 500;
+}
+
+.captcha-note {
+  font-size: small;
+}
+
+::ng-deep .mat-mdc-slider {
+  --mdc-slider-handle-color: var(--theme-accent);
+  --mdc-slider-focus-handle-color: var(--theme-accent);
+  --mdc-slider-hover-handle-color: var(--theme-accent);
+  --mdc-slider-active-track-color: var(--theme-accent);
+  --mdc-slider-inactive-track-color: var(--theme-accent-fade-30);
+  --mdc-slider-with-tick-marks-active-container-color: var(--theme-background);
+  --mdc-slider-with-tick-marks-inactive-container-color: var(--theme-background-darker);
+}
+
+::ng-deep .mat-mdc-slider .mdc-slider__thumb-knob {
+  background-color: var(--theme-accent) !important;
+  border-color: var(--theme-accent) !important;
+}
+
+::ng-deep .mat-mdc-slider .mdc-slider__tick-marks {
+  background-size: 25% 2px !important;
+}
+
+::ng-deep .mat-mdc-slider .mdc-slider__thumb-label {
+  background-color: var(--theme-accent);
+  color: var(--theme-background);
+}
+
+mat-hint {
+  color: var(--theme-text-fade-40);
+  font-size: 0.85em;
+}
+
+.star {
+  color: #c8c8c8;
+}
+
+.active {
+  color: #ffd700;
+}
+
+.select {
+  color: #ffd700;
+}
+
+:host ::ng-deep .br {
+  margin: 0 !important;
+}
+
+#submitButton {
+  margin-left: 20%;
+  margin-top: 2rem;
+  width: 60%;
+}
+
+.center-container {
+  align-items: stretch;
+  display: flex;
+  justify-content: center;
+}/*# sourceMappingURL=contact.component.css.map */

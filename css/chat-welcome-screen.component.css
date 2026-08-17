@@ -1,0 +1,194 @@
+/*!
+ * Copyright (c) 2014-2026 Bjoern Kimminich & the OWASP Juice Shop contributors.
+ * SPDX-License-Identifier: MIT
+ */
+/*!
+ * Copyright (c) 2014-2026 Bjoern Kimminich & the OWASP Juice Shop contributors.
+ * SPDX-License-Identifier: MIT
+ */
+:host {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.welcome-screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 0;
+  padding: 2rem 0;
+}
+.welcome-screen::before, .welcome-screen::after {
+  content: "";
+  flex: 1;
+}
+
+.welcome-branding {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.welcome-avatar {
+  height: 100px;
+  margin-bottom: 0.5rem;
+}
+
+.welcome-title {
+  font-size: 28px;
+  font-weight: 400;
+  margin: 0;
+}
+
+.welcome-subtitle {
+  font-size: 16px;
+  opacity: 0.6;
+  margin: 0;
+}
+
+.history-section {
+  width: 100%;
+  margin-bottom: 1.5rem;
+}
+
+.history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.history-heading {
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0.6;
+  margin: 0;
+}
+
+.history-delete-all {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: none;
+  border: none;
+  color: inherit;
+  opacity: 0.6;
+  cursor: pointer;
+  padding: 0.125rem 0.5rem;
+  border-radius: 4px;
+  font-size: 12px;
+  transition: all 0.15s;
+}
+.history-delete-all:hover {
+  opacity: 1;
+  background: var(--theme-background-lighter);
+}
+.history-delete-all mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.625rem 1rem;
+  border-radius: 10px;
+  border: 1px solid var(--theme-background-darkest);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+.history-item:hover {
+  background: var(--theme-background-lighter);
+}
+
+.history-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.history-title {
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.history-date {
+  font-size: 12px;
+  opacity: 0.5;
+}
+
+.history-delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: inherit;
+  opacity: 0.4;
+  cursor: pointer;
+  padding: 0.125rem;
+  border-radius: 4px;
+  transition: opacity 0.15s;
+}
+.history-delete:hover {
+  opacity: 0.8;
+}
+.history-delete mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+.welcome-input-area {
+  width: 100%;
+}
+
+.suggestions {
+  display: flex;
+  gap: 0.625rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.suggestion-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  border-radius: 20px;
+  border: 1px solid var(--theme-background-darkest);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.15s;
+}
+.suggestion-chip:hover {
+  background: var(--theme-background-lighter);
+}
+.suggestion-chip mat-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  opacity: 0.7;
+}/*# sourceMappingURL=chat-welcome-screen.component.css.map */

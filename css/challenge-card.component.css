@@ -1,0 +1,206 @@
+/*!
+ * Copyright (c) 2014-2026 Bjoern Kimminich & the OWASP Juice Shop contributors.
+ * SPDX-License-Identifier: MIT
+ */
+/*!
+ * Copyright (c) 2014-2026 Bjoern Kimminich & the OWASP Juice Shop contributors.
+ * SPDX-License-Identifier: MIT
+ */
+:host {
+  background-color: var(--theme-background-darker);
+  border-radius: 2px;
+  box-shadow: 0 0 0 2px rgba(80, 80, 80, 0.25);
+  display: grid;
+  grid-template-rows: min-content min-content auto min-content;
+  max-height: 144px;
+  overflow: hidden;
+  padding: 0.625rem 1.5rem;
+}
+:host.solved {
+  border-top: 4px solid var(--theme-accent);
+}
+:host.solved .dot {
+  background-color: var(--theme-accent);
+}
+:host.unsolved {
+  border-top: 4px solid rgba(80, 80, 80, 0.25);
+}
+:host.unsolved .dot {
+  background-color: #5c5c5c;
+}
+:host.disabled {
+  filter: opacity(0.4);
+}
+:host.disabled .dot {
+  background-color: var(--theme-warn-fade-40);
+}
+
+.category-row {
+  color: var(--theme-text-fade-50);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 14px;
+}
+
+.name-row {
+  align-items: center;
+  -moz-column-gap: 0.25rem;
+       column-gap: 0.25rem;
+  display: grid;
+  grid-template-columns: 12px auto min-content;
+  margin-top: 0.5rem;
+}
+.name-row .dot {
+  border-radius: 50%;
+  height: 14px;
+  width: 14px;
+}
+.name-row .name {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.difficulty {
+  display: flex;
+}
+
+.description-row {
+  color: var(--theme-text-fade-50);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 14px;
+  margin-top: 0.625rem;
+  overflow-y: auto;
+}
+
+.description-row::-webkit-scrollbar {
+  height: 10px;
+  width: 10px;
+}
+
+.description-row::-webkit-scrollbar-track {
+  background: var(--theme-background-darker);
+  border-radius: 10px;
+}
+
+.description-row::-webkit-scrollbar-thumb {
+  background: var(--theme-primary) !important;
+  border-radius: 10px;
+}
+
+.description-row::-webkit-scrollbar-corner {
+  display: none;
+}
+
+.description-row ::ng-deep code {
+  cursor: copy;
+}
+.description-row ::ng-deep code:hover {
+  background-color: var(--theme-background-light);
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  html {
+    scrollbar-width: thin;
+  }
+}
+.bottom-row {
+  align-items: end;
+  -moz-column-gap: 0.25rem;
+       column-gap: 0.25rem;
+  display: grid;
+  grid-template-columns: auto min-content;
+  margin-top: 1rem;
+}
+.bottom-row .tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+.bottom-row .tag {
+  background: var(--theme-background-lighter);
+  border: 1px solid var(--theme-background-light);
+  border-radius: 1.82849px;
+  color: var(--theme-text-darker);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 14px;
+  padding: 0.25rem;
+}
+.bottom-row .tag.tag-missing-dependency {
+  color: var(--theme-warn);
+}
+.bottom-row .tag.tag-available-dependency {
+  color: var(--theme-accent);
+}
+.bottom-row .tag .dependency-icon {
+  font-size: 10px;
+  height: 10px;
+  width: 10px;
+}
+
+.badge-group {
+  -moz-column-gap: 0.25rem;
+       column-gap: 0.25rem;
+  display: flex;
+}
+
+.badge {
+  align-items: center;
+  background-color: var(--theme-background-lighter);
+  border: 0;
+  border-radius: 12px;
+  color: var(--theme-text) !important;
+  cursor: pointer;
+  display: flex;
+  height: 24px;
+  justify-content: center;
+  min-width: 24px;
+  padding: 0;
+  position: relative;
+}
+.badge mat-icon {
+  font-size: 16px;
+  height: 16px;
+  width: 16px;
+}
+.badge .badge-status {
+  background-color: var(--theme-background-darker);
+  border: 1px solid var(--theme-background-light);
+  border-radius: 4px;
+  font-size: 10px;
+  padding: 0 0.25rem;
+  position: absolute;
+  top: -35%;
+}
+
+.badge.completed {
+  background-color: var(--theme-accent);
+}
+.badge.completed .badge-status {
+  color: var(--theme-accent);
+}
+
+.badge.partially-completed {
+  background-color: var(--theme-accent-dark);
+}
+.badge.partially-completed .badge-status {
+  color: var(--theme-accent-dark);
+}
+
+.badge.not-completable {
+  background-color: var(--theme-accent);
+}
+.badge.not-completable .badge-status {
+  color: var(--theme-accent);
+}
+
+.badge:disabled {
+  background-color: var(--theme-background-light);
+  cursor: not-allowed;
+}
+.badge:disabled .badge-status {
+  color: var(--theme-accent);
+}/*# sourceMappingURL=challenge-card.component.css.map */
