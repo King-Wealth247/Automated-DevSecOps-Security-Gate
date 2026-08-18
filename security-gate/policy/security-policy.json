@@ -1,0 +1,17 @@
+{
+  "policyVersion": "1.0",
+  "policyName": "DevSecOps Security Gate",
+  "description": "Blocks deployment when Critical or High vulnerabilities are detected.",
+  "vulnerabilityThresholds": {
+    "CRITICAL": 0,
+    "HIGH": 0,
+    "MEDIUM": null,
+    "LOW": null
+  },
+  "actions": {
+    "CRITICAL": "BLOCK",
+    "HIGH": "BLOCK",
+    "MEDIUM": "WARN",
+    "LOW": "INFO"
+  }
+}

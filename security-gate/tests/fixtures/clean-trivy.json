@@ -1,0 +1,16 @@
+{
+  "ArtifactName": "test-clean-image:latest",
+  "ArtifactType": "container_image",
+  "Results": [
+    {
+      "Target": "test-clean-image:latest",
+      "Type": "debian",
+      "Vulnerabilities": []
+    },
+    {
+      "Target": "Node.js",
+      "Type": "node-pkg",
+      "Vulnerabilities": []
+    }
+  ]
+}
