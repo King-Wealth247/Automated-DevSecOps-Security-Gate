@@ -1,0 +1,11 @@
+title = "DevSecOps Pipeline Gitleaks Configuration"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "OWASP Juice Shop is the intentionally vulnerable test application"
+
+paths = [
+    '''juice-shop'''
+]

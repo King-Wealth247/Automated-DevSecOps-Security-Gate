@@ -36,3 +36,6 @@ temp/
 
 # Security scan output
 *.sarif
+
+# Reports
+reports/
