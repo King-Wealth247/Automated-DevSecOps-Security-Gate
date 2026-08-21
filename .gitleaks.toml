@@ -3,9 +3,12 @@ title = "DevSecOps Pipeline Gitleaks Configuration"
 [extend]
 useDefault = true
 
-[allowlist]
-description = "OWASP Juice Shop is the intentionally vulnerable test application"
-
-paths = [
-    '''juice-shop'''
-]
+# Intentionally no allowlist for juice-shop/.
+#
+# OWASP Juice Shop is scanned like any other part of the repository (SRS
+# FR-07, FR-28). Its known, built-in secrets (test API keys, JWTs, a
+# terraform private key fixture, etc.) are deliberately vulnerable content
+# used to validate that Gitleaks and the Security Policy Engine actually
+# detect and BLOCK on real findings. They are expected findings, not false
+# positives, and must not be excluded or remediated here or in juice-shop/
+# itself.
