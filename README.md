@@ -29,15 +29,17 @@ Developer → GitHub (push / PR)
 
 ```
 DevSecOps-Pipeline/
-├── .github/workflows/     GitHub Actions CI/CD pipeline definitions
+├── .github/workflows/     GitHub Actions CI/CD pipeline definitions (ci.yml)
 ├── juice-shop/             OWASP Juice Shop test application (vendored, unmodified)
-├── security-gate/          Security policy + evaluation scripts (Security Policy Engine)
+├── security-policy/        Security policy + evaluation scripts (Security Policy Engine)
 │   ├── policy/              Version-controlled security policy
 │   ├── scripts/              Policy evaluation logic
 │   └── tests/                 Fixtures and test cases
+├── security-scans/         Per-tool scanner configuration
+│   └── gitleaks.toml         Gitleaks secret-scanning configuration
+├── sonar-project.properties SonarQube Cloud scanner configuration
 ├── reports/                Generated scan/security reports (local, gitignored)
 ├── docs/                    Project documentation
-├── .gitleaks.toml           Gitleaks secret-scanning configuration
 ├── IMPLEMENTATION_PLAN.md   Requirements-to-implementation status and roadmap
 └── README.md
 ```
@@ -77,15 +79,15 @@ docker run --rm -p 3000:3000 devsecops-juice-shop:local
 
 | Scanner | What it checks | Config |
 |---|---|---|
-| **Gitleaks** | Exposed secrets/credentials in the repository, including Juice Shop's own source | [`.gitleaks.toml`](./.gitleaks.toml) |
-| **SonarQube Cloud** | Security-focused static code analysis of Juice Shop's source | *(pending — see `IMPLEMENTATION_PLAN.md`)* |
-| **Trivy** | Known CVEs in the built container image and its dependencies | [`security-gate/policy/security-policy.json`](./security-gate/policy/security-policy.json) |
+| **Gitleaks** | Exposed secrets/credentials in the repository, including Juice Shop's own source | [`security-scans/gitleaks.toml`](./security-scans/gitleaks.toml) |
+| **SonarQube Cloud** | Security-focused static code analysis of Juice Shop's source | [`sonar-project.properties`](./sonar-project.properties) |
+| **Trivy** | Known CVEs in the built container image and its dependencies | [`security-policy/policy/security-policy.json`](./security-policy/policy/security-policy.json) |
 
 Run scans locally:
 
 ```powershell
 # Gitleaks — writes/expects a report at reports\gitleaks\final.json
-gitleaks detect --source . --config .gitleaks.toml --report-path reports\gitleaks\final.json
+gitleaks detect --source . --config security-scans\gitleaks.toml --report-path reports\gitleaks\final.json
 
 # Trivy — scan the built image
 trivy image --format json --output reports\trivy\baseline.json devsecops-juice-shop:local
@@ -101,15 +103,16 @@ Security policy is defined in a version-controlled configuration file specifying
 Evaluate a scan against the current policy locally:
 
 ```powershell
-.\security-gate\scripts\evaluate-trivy.ps1 -ReportPath ".\reports\trivy\baseline.json"
-.\security-gate\scripts\evaluate-gitleaks.ps1 -ReportPath ".\reports\gitleaks\final.json"
+.\security-policy\scripts\evaluate-trivy.ps1 -ReportPath ".\reports\trivy\baseline.json"
+.\security-policy\scripts\evaluate-gitleaks.ps1 -ReportPath ".\reports\gitleaks\final.json"
+.\security-policy\scripts\evaluate-sonarqube.ps1
 ```
 
 An exit code of `0` means PASS; a non-zero exit code means BLOCK.
 
 ## Running Tests
 
-Fixture-based test data lives under `security-gate/tests/fixtures/`. See [`IMPLEMENTATION_PLAN.md`](./IMPLEMENTATION_PLAN.md) for the planned automated policy/integration test suite.
+Fixture-based test data lives under `security-policy/tests/fixtures/`. See [`IMPLEMENTATION_PLAN.md`](./IMPLEMENTATION_PLAN.md) for the planned automated policy/integration test suite.
 
 ## CI/CD & Deployment
 
