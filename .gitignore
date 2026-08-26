@@ -36,7 +36,7 @@ temp/
 
 # Security scan output
 *.sarif
-juice-shop/.scannerwork/
+.scannerwork/
 
 # Reports
 reports/

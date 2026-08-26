@@ -1,6 +1,7 @@
 param(
-    [string]$SonarHostUrl = "http://localhost:9000",
-    [string]$ProjectKey = "automated-devsecops-security-gate",
+    [string]$SonarHostUrl = "https://sonarcloud.io",
+    [string]$Organization = "king-wealth247",
+    [string]$ProjectKey = "King-Wealth247_Automated-DevSecOps-Security-Gate",
     [string]$Token = $env:SONAR_TOKEN
 )
 
@@ -27,7 +28,7 @@ if ([string]::IsNullOrWhiteSpace($Token)) {
 # ------------------------------------------------------------
 
 $qualityGateUrl = `
-    "$SonarHostUrl/api/qualitygates/project_status?projectKey=$ProjectKey"
+    "$SonarHostUrl/api/qualitygates/project_status?projectKey=$ProjectKey&organization=$Organization"
 
 try {
     $qualityGateResponse = Invoke-RestMethod `
@@ -55,6 +56,7 @@ $conditions = @($qualityGateResponse.projectStatus.conditions)
 
 Write-Host "PROJECT SUMMARY" -ForegroundColor White
 Write-Host "========================================"
+Write-Host "Organization:        $Organization"
 Write-Host "Project Key:         $ProjectKey"
 Write-Host "Quality Gate Status: $status"
 Write-Host ""
