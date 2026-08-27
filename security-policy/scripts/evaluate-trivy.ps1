@@ -1,6 +1,6 @@
 param(
-    [string]$ReportPath = ".\reports\trivy\baseline.json",
-    [string]$PolicyPath = ".\security-policy\policy\security-policy.json"
+    [string]$ReportPath = "./reports/trivy/baseline.json",
+    [string]$PolicyPath = "./security-policy/policy/security-policy.json"
 )
 
 $ErrorActionPreference = "Stop"

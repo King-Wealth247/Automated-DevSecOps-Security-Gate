@@ -1,5 +1,5 @@
 param(
-    [string]$ReportPath = ".\reports\gitleaks\final.json"
+    [string]$ReportPath = "./reports/gitleaks/final.json"
 )
 
 $ErrorActionPreference = "Stop"
