@@ -14,4 +14,4 @@ separate from Juice Shop's own built-in intentional secrets.
 
 Do not remove this file without updating IMPLEMENTATION_PLAN.md task 2.6.
 
-fake_api_key = "sk_test_AC02FAKE1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+generic_api_key = "8f1c4a9d3e7b6c2081af59d34e7b0261c9f4a83d7e6b0125c"
