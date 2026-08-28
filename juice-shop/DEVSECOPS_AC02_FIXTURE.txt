@@ -1,0 +1,17 @@
+DevSecOps Security Gate -- AC-02 Rehearsal Fixture
+===================================================
+
+This file was intentionally added by the Automated DevSecOps Security Gate
+project (see IMPLEMENTATION_PLAN.md, Phase 2, task 2.6) to rehearse
+acceptance criterion AC-02: "planted fake secret in Juice Shop -> Gitleaks
+finds it -> BLOCK, x3".
+
+The value below is NOT a real credential. It was never valid, is not
+connected to any live account or system, and grants no access to anything.
+It exists solely to produce a deterministic Gitleaks finding so the
+security gate's BLOCK path can be rehearsed against a known-planted secret,
+separate from Juice Shop's own built-in intentional secrets.
+
+Do not remove this file without updating IMPLEMENTATION_PLAN.md task 2.6.
+
+fake_api_key = "sk_test_AC02FAKE1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ"
