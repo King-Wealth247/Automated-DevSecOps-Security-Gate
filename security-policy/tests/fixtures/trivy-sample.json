@@ -1,0 +1,22 @@
+{
+  "ArtifactName": "test-sample-image:latest",
+  "ArtifactType": "container_image",
+  "Results": [
+    {
+      "Target": "test-sample-image:latest (debian 13.6)",
+      "Type": "debian",
+      "Vulnerabilities": [
+        {"VulnerabilityID": "CVE-2026-0001", "PkgName": "libc6", "Severity": "CRITICAL", "Title": "sample critical finding"},
+        {"VulnerabilityID": "CVE-2026-0002", "PkgName": "libssl", "Severity": "HIGH", "Title": "sample high finding"},
+        {"VulnerabilityID": "CVE-2026-0003", "PkgName": "zlib", "Severity": "MEDIUM", "Title": "sample medium finding"},
+        {"VulnerabilityID": "CVE-2026-0004", "PkgName": "curl", "Severity": "LOW", "Title": "sample low finding"},
+        {"VulnerabilityID": "CVE-2026-0005", "PkgName": "mystery-pkg", "Severity": "UNKNOWN", "Title": "sample unclassified finding"}
+      ]
+    },
+    {
+      "Target": "Node.js",
+      "Type": "node-pkg",
+      "Vulnerabilities": []
+    }
+  ]
+}

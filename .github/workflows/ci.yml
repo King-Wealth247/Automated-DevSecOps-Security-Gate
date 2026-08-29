@@ -154,3 +154,83 @@ jobs:
         shell: pwsh
         continue-on-error: true
         run: ./security-policy/scripts/evaluate-trivy.ps1 -ReportPath trivy-report.json
+
+  policy-gate:
+    name: Security Policy Gate (Python Engine)
+    runs-on: ubuntu-latest
+    needs: [gitleaks-scan, trivy-scan, sonarqube-scan]
+    if: always()
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install engine dependencies
+        run: pip install -r security-policy/requirements.txt
+
+      - name: Download Gitleaks report
+        uses: actions/download-artifact@v4
+        with:
+          name: gitleaks-report
+          path: security-policy/reports/incoming
+
+      - name: Download Trivy report
+        uses: actions/download-artifact@v4
+        with:
+          name: trivy-report
+          path: security-policy/reports/incoming
+
+      # unlike gitleaks-scan/trivy-scan's report-only steps
+      # above, this job is NOT continue-on-error -- a BLOCK here fails the
+      # job and (once Phase 4 adds needs: policy-gate) stops publish/deploy.
+      - name: Run Security Policy Engine
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          python security-policy/policy_engine.py \
+            --gitleaks security-policy/reports/incoming/gitleaks-report.json \
+            --trivy security-policy/reports/incoming/trivy-report.json \
+            --sonar-project-key King-Wealth247_Automated-DevSecOps-Security-Gate \
+            --sonar-organization king-wealth247 \
+            --policy security-policy/policy.yaml \
+            --report-out security-policy/reports/security-report.md
+
+      - name: Determine gate decision
+        if: always()
+        id: decision
+        run: |
+          if grep -q '\*\*Decision:\*\* PASS' security-policy/reports/security-report.md; then
+            echo "decision=PASS" >> "$GITHUB_OUTPUT"
+          else
+            echo "decision=BLOCK" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload security report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-report
+          path: security-policy/reports/security-report.md
+          if-no-files-found: error
+
+      # FR-21/22, SRS S12: post on every run regardless of outcome; a broken
+      # or unconfigured webhook must never change the gate decision (the
+      # "Run Security Policy Engine" step above already set that via its own
+      # exit code) -- hence continue-on-error here, and skipped entirely
+      # (not a noisy failure) when SLACK_WEBHOOK_URL isn't set.
+      - name: Notify Slack
+        if: ${{ always() && secrets.SLACK_WEBHOOK_URL != '' }}
+        continue-on-error: true
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          DECISION: ${{ steps.decision.outputs.decision }}
+        run: |
+          curl -sS -X POST -H 'Content-type: application/json' \
+            --data "{\"text\":\"DevSecOps Security Gate: ${DECISION} -- ${{ github.repository }} @ ${{ github.sha }} (run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\"}" \
+            "$SLACK_WEBHOOK_URL"

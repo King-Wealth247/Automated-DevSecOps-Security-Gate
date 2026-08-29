@@ -1,0 +1,11 @@
+{
+  "projectStatus": {
+    "status": "OK",
+    "conditions": [
+      {"status": "OK", "metricKey": "new_reliability_rating", "actualValue": "1", "errorThreshold": "1"},
+      {"status": "OK", "metricKey": "new_security_rating", "actualValue": "1", "errorThreshold": "1"},
+      {"status": "OK", "metricKey": "new_maintainability_rating", "actualValue": "1", "errorThreshold": "1"},
+      {"status": "OK", "metricKey": "new_security_hotspots_reviewed", "actualValue": "100.0", "errorThreshold": "100"}
+    ]
+  }
+}

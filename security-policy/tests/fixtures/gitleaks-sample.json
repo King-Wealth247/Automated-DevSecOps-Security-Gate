@@ -1,0 +1,23 @@
+[
+  {
+    "RuleID": "generic-api-key",
+    "Description": "Detected a Generic API Key, potentially exposing access to various services and sensitive operations.",
+    "StartLine": 88,
+    "File": "/repo/juice-shop/data/static/users.yml",
+    "Fingerprint": "/repo/juice-shop/data/static/users.yml:generic-api-key:88"
+  },
+  {
+    "RuleID": "jwt",
+    "Description": "Uncovered a JSON Web Token, which may lead to unauthorized access to web applications and sensitive user data.",
+    "StartLine": 46,
+    "File": "/repo/juice-shop/frontend/src/app/app.guard.spec.ts",
+    "Fingerprint": "/repo/juice-shop/frontend/src/app/app.guard.spec.ts:jwt:46"
+  },
+  {
+    "RuleID": "private-key",
+    "Description": "Identified a Private Key, which may compromise cryptographic security and sensitive data encryption.",
+    "StartLine": 171,
+    "File": "/repo/juice-shop/infrastructure/terraform/networking.tf",
+    "Fingerprint": "/repo/juice-shop/infrastructure/terraform/networking.tf:private-key:171"
+  }
+]

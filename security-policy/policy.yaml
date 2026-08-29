@@ -1,0 +1,31 @@
+# DevSecOps Security Gate policy (SRS S5.1, FR-29).
+#
+# Each category defines an "allowed" threshold:
+#   - a number:        BLOCK if the found count exceeds this value
+#   - null (unlimited): never blocks on its own (report-only)
+#
+# A vulnerability severity with NO entry at all here (not even `allowed: null`)
+# defaults to zero-tolerance, per SRS S5.3's fail-closed rule for unmapped
+# severities. `secrets` has no severity split -- any Gitleaks finding counts
+# against it directly, matching how AC-02 has always been evaluated.
+#
+# Calibrated 2026-08-28 (task 2.5) against Juice Shop's real, CI-validated
+# baseline: 69 Gitleaks leaks, 8 CRITICAL / 38 HIGH / 36 MEDIUM / 11 LOW Trivy
+# findings. Critical/High/secrets are strict enough to demonstrably BLOCK
+# (AC-02, AC-03); Medium/Low stay unlimited so the gate isn't permanently
+# unpassable on metrics this project isn't trying to demonstrate BLOCK on.
+# See IMPLEMENTATION_PLAN.md Phase 2 task 2.5 and Phase 3 task 3.3 for the
+# full rationale, including why a live scan of juice-shop/ itself can never
+# produce PASS under these thresholds (AC-01/AC-04 need a controlled input).
+
+security_policy:
+  secrets:
+    allowed: 0
+  critical_vulnerabilities:
+    allowed: 0
+  high_vulnerabilities:
+    allowed: 0
+  medium_vulnerabilities:
+    allowed: null
+  low_vulnerabilities:
+    allowed: null
