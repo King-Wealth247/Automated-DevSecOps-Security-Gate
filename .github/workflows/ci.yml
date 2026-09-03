@@ -161,6 +161,13 @@ jobs:
     needs: [gitleaks-scan, trivy-scan, sonarqube-scan]
     if: always()
     timeout-minutes: 10
+    env:
+      # promoted from secrets so the "Notify Slack" step's `if:` can read it --
+      # the `secrets` context is not available inside `if:` expressions
+      # (GitHub Actions only exposes it to `env:`/`with:`), so checking
+      # `secrets.SLACK_WEBHOOK_URL` directly there is a hard workflow-parse
+      # error, not a runtime skip.
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
     steps:
       - name: Checkout
@@ -225,10 +232,9 @@ jobs:
       # exit code) -- hence continue-on-error here, and skipped entirely
       # (not a noisy failure) when SLACK_WEBHOOK_URL isn't set.
       - name: Notify Slack
-        if: ${{ always() && secrets.SLACK_WEBHOOK_URL != '' }}
+        if: ${{ always() && env.SLACK_WEBHOOK_URL != '' }}
         continue-on-error: true
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           DECISION: ${{ steps.decision.outputs.decision }}
         run: |
           curl -sS -X POST -H 'Content-type: application/json' \
