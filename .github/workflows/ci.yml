@@ -23,16 +23,22 @@ jobs:
         with:
           node-version: '22'
 
-      # npm 10.9.x's Arborist crashes reifying juice-shop/frontend's tree
-      # ("Cannot read properties of null (reading 'edgesOut')"), reproduced
-      # deterministically on 2026-09-03/04 runs (33816311491, 91861792857).
-      # Pinning back to 10.8.2, the last version known not to hit it, as a
-      # CI-only mitigation -- juice-shop/'s own files are out of scope here.
-      - name: Pin npm to a known-stable version
-        run: npm install -g npm@10.8.2
-
+      # npm's Arborist crashes reifying juice-shop/frontend's peer-dependency
+      # graph ("Cannot read properties of null (reading 'edgesOut')"),
+      # reproduced deterministically in live runs (33816311491, 91861792857)
+      # and locally -- traced to #loadPeerSet recursing through the vitest/
+      # @vitest/coverage-v8 peer set. Pinning npm to 10.8.2 did NOT fix it
+      # (confirmed live, same crash). juice-shop/.npmrc and
+      # juice-shop/frontend/.npmrc both set `package-lock=false` deliberately
+      # (floating latest deps on every install), so there's no lockfile to
+      # regenerate. --legacy-peer-deps uses npm's older, non-crashing peer
+      # resolution and is confirmed locally to fix it end-to-end (root
+      # install -> nested frontend postinstall -> Angular build all succeed)
+      # -- it propagates into the nested `cd frontend && npm install` via
+      # npm's own env-var config inheritance, so no juice-shop/ file needs
+      # to change.
       - name: Install dependencies
-        run: npm install
+        run: npm install --legacy-peer-deps
 
       - name: Build
         run: npm run build
