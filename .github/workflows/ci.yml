@@ -181,14 +181,22 @@ jobs:
       - name: Install engine dependencies
         run: pip install -r security-policy/requirements.txt
 
+      # continue-on-error: if gitleaks-scan/trivy-scan were skipped or failed
+      # upstream, the artifact genuinely won't exist and this action errors
+      # hard by default -- that must not abort the job before the engine
+      # runs, since policy_engine.py's own try/except (FR-30/NFR-03) is what
+      # is supposed to turn a missing report into a documented BLOCK, not a
+      # bare job crash with no report at all.
       - name: Download Gitleaks report
         uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
           name: gitleaks-report
           path: security-policy/reports/incoming
 
       - name: Download Trivy report
         uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
           name: trivy-report
           path: security-policy/reports/incoming
