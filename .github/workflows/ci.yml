@@ -3,6 +3,7 @@ name: CI
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 jobs:
   build-and-test:
@@ -262,3 +263,49 @@ jobs:
           curl -sS -X POST -H 'Content-type: application/json' \
             --data "{\"text\":\"DevSecOps Security Gate: ${DECISION} -- ${{ github.repository }} @ ${{ github.sha }} (run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\"}" \
             "$SLACK_WEBHOOK_URL"
+
+  policy-gate-pass-rehearsal:
+    name: Security Policy Gate - PASS Rehearsal (AC-01/AC-04)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install engine dependencies
+        run: pip install -r security-policy/requirements.txt
+
+      # AC-01/AC-04 require demonstrating a live PASS decision. Juice Shop's
+      # own code organically contains ~70 secrets and 8 CRITICAL/38 HIGH
+      # vulnerabilities (task 2.5's documented constraint), so a live scan
+      # of juice-shop/ itself can never PASS under policy.yaml's thresholds
+      # -- and those thresholds must not be relaxed, nor juice-shop/ touched,
+      # just to force one. This job runs the exact same engine and the exact
+      # same policy.yaml against a controlled clean input -- the same
+      # fixtures already proven by test_clean_inputs_pass_and_exit_zero --
+      # to demonstrate the PASS path for real inside GitHub Actions, not
+      # just in pytest. Manually triggered only (workflow_dispatch), never
+      # on push/PR, so it can't be mistaken for the real gate's verdict.
+      - name: Run Security Policy Engine against a clean input
+        run: |
+          python security-policy/policy_engine.py \
+            --gitleaks security-policy/tests/fixtures/gitleaks-empty.json \
+            --trivy security-policy/tests/fixtures/clean-trivy.json \
+            --sonarqube security-policy/tests/fixtures/sonarqube-passed.json \
+            --policy security-policy/policy.yaml \
+            --report-out security-policy/reports/pass-rehearsal-report.md
+
+      - name: Upload PASS rehearsal report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pass-rehearsal-report
+          path: security-policy/reports/pass-rehearsal-report.md
+          if-no-files-found: error
