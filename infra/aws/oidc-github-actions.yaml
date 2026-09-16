@@ -2,9 +2,8 @@ AWSTemplateFormatVersion: "2010-09-09"
 
 Description: >-
   GitHub Actions OIDC identity provider + least-privilege deploy role for the
-  Automated DevSecOps Security Gate (implementation-plan task 4.3; FR-26,
-  SEC-03, SEC-04). No long-lived AWS keys anywhere: GitHub Actions federates
-  through the OIDC provider, and the PASS deploy job (task 4.5) drives the
+  Automated DevSecOps Security Gate. No long-lived AWS keys anywhere: GitHub Actions federates
+  through the OIDC provider, and the PASS deploy job drives the
   single EC2 test instance via SSM Run Command, scoped to ONE tagged instance.
 
 Parameters:
@@ -107,7 +106,7 @@ Resources:
                   - ec2:DescribeTags
                 Resource: "*"
               # The single write path: issue an SSM Run Command to the ONE
-              # instance carrying the configurable tag (task 4.4 must apply it).
+              # instance carrying the configurable tag.
               - Sid: IssueDeployCommandToTestInstance
                 Effect: Allow
                 Action:
