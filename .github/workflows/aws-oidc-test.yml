@@ -1,0 +1,36 @@
+# Validates task 4.3 (FR-26 / SEC-03 / SEC-04): GitHub Actions can federate
+# into AWS via OIDC and assume the least-privilege deploy role WITHOUT any
+# long-lived AWS credentials stored in the repo.
+#
+# Manual trigger only (workflow_dispatch), so it never runs on a normal
+# push/PR. Requires two repository VARIABLES (not secrets) to be set first:
+#   AWS_REGION          - e.g. us-east-1
+#   AWS_ASSUME_ROLE_ARN - value of the DeployRoleArn stack output
+# See infra/aws/README.md for the provisioning walkthrough.
+name: AWS OIDC Federation Test (task 4.3)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write   # REQUIRED for OIDC federation; GITHUB_TOKEN is exchanged for an OIDC token
+  contents: read
+
+jobs:
+  assume-and-identify:
+    name: Assume GitHub Actions deploy role
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Configure AWS credentials (federated, no stored keys)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ASSUME_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      # Success here (no AccessDenied) proves the OIDC provider + trust policy
+      # are correct. Expected output: an ARN containing
+      # github-actions-devsecops-deploy.
+      - name: Print the assumed identity
+        run: aws sts get-caller-identity --no-cli-pager

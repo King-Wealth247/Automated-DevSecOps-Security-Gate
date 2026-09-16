@@ -1,0 +1,151 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: >-
+  GitHub Actions OIDC identity provider + least-privilege deploy role for the
+  Automated DevSecOps Security Gate (implementation-plan task 4.3; FR-26,
+  SEC-03, SEC-04). No long-lived AWS keys anywhere: GitHub Actions federates
+  through the OIDC provider, and the PASS deploy job (task 4.5) drives the
+  single EC2 test instance via SSM Run Command, scoped to ONE tagged instance.
+
+Parameters:
+  GitHubOrg:
+    Description: GitHub organization/owner of the source repository.
+    Type: String
+    Default: King-Wealth247
+  GitHubRepo:
+    Description: GitHub repository name.
+    Type: String
+    Default: Automated-DevSecOps-Security-Gate
+  AllowedRef:
+    Description: >-
+      The git ref ('sub' claim suffix) allowed to assume the role,
+      e.g. 'refs/heads/main'. For tags use 'refs/tags/*'.
+    Type: String
+    Default: refs/heads/main
+  InstanceTagKey:
+    Description: Tag key marking the one EC2 test instance (scopes SSM commands).
+    Type: String
+    Default: DevSecOps
+  InstanceTagValue:
+    Description: Tag value marking the one EC2 test instance.
+    Type: String
+    Default: juice-shop
+  CreateOidcProvider:
+    Description: >-
+      Create the GitHub Actions OIDC provider in this account (true), or reuse
+      an existing one via ExistingOIDCProviderArn (false), when another project
+      already provisioned it.
+    Type: String
+    AllowedValues: [true, false]
+    Default: true
+  ExistingOIDCProviderArn:
+    Description: >-
+      ARN of an existing GitHub OIDC provider, used only when
+      CreateOidcProvider is 'false'.
+    Type: String
+    Default: ""
+
+Conditions:
+  CreateOidcProvider: !Equals [!Ref CreateOidcProvider, true]
+
+Resources:
+  # https://docs.github.com/en/actions/security-for-github-actions/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
+  GitHubOIDCProvider:
+    Type: AWS::IAM::OIDCProvider
+    Condition: CreateOidcProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList:
+        - sts.amazonaws.com
+      ThumbprintList:
+        - 6938fd4d98bab03faadb97b34396831e3780aea1
+        - 1c58a3a8518e3cdca48f2c369171e4bf64fcb481
+
+  GitHubActionsDeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: github-actions-devsecops-deploy
+      Description: >-
+        Federated identity that lets GitHub Actions (repo
+        King-Wealth247/Automated-DevSecOps-Security-Gate, branch main) drive
+        the single tagged EC2 test instance via SSM Run Command after a PASS
+        decision. EC2 access is read-only; the only write path is SendCommand
+        to a specific tagged instance. No long-lived AWS keys.
+      MaxSessionDuration: 3600
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRoleWithWebIdentity
+            Principal:
+              Federated: !If
+                - CreateOidcProvider
+                - !GetAtt GitHubOIDCProvider.Arn
+                - !Ref ExistingOIDCProviderArn
+            Condition:
+              StringEquals:
+                "token.actions.githubusercontent.com:aud": sts.amazonaws.com
+              StringLike:
+                "token.actions.githubusercontent.com:sub": !Sub
+                  - repo:${GHOrg}/${GHRepo}:ref:${GHRef}
+                  - GHOrg: !Ref GitHubOrg
+                    GHRepo: !Ref GitHubRepo
+                    GHRef: !Ref AllowedRef
+      Policies:
+        - PolicyName: JuiceShopEC2Deploy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              # Describe-only EC2 access to locate the instance by tag (task 4.5
+              # uses these to find the instance to deploy to). Read-only actions
+              # cannot be resource-scoped, so '*' is the AWS-mandated minimum.
+              - Sid: DiscoverTestInstance
+                Effect: Allow
+                Action:
+                  - ec2:DescribeInstances
+                  - ec2:DescribeInstanceStatus
+                  - ec2:DescribeTags
+                Resource: "*"
+              # The single write path: issue an SSM Run Command to the ONE
+              # instance carrying the configurable tag (task 4.4 must apply it).
+              - Sid: IssueDeployCommandToTestInstance
+                Effect: Allow
+                Action:
+                  - ssm:SendCommand
+                Resource:
+                  - !Sub arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:instance/*
+                Condition:
+                  StringEquals:
+                    "ssm:ResourceTag/${InstanceTagKey}": !Ref InstanceTagValue
+              # SendCommand requires a separate grant on the SSM document ARN;
+              # AWS-managed documents cannot be tagged so this is its own
+              # statement (no tag condition here).
+              - Sid: UseAwsRunShellDocument
+                Effect: Allow
+                Action:
+                  - ssm:SendCommand
+                Resource:
+                  - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}::document/AWS-RunShellScript
+              # AWS requires '*' for command-status actions (there is no
+              # command ARN to scope against).
+              - Sid: ObserveDeployCommand
+                Effect: Allow
+                Action:
+                  - ssm:CancelCommand
+                  - ssm:GetCommandInvocation
+                  - ssm:ListCommandInvocations
+                  - ssm:ListCommands
+                Resource: "*"
+
+Outputs:
+  OIDCProviderArn:
+    Description: ARN of the GitHub Actions OIDC provider.
+    Value: !If
+      - CreateOidcProvider
+      - !GetAtt GitHubOIDCProvider.Arn
+      - !Ref ExistingOIDCProviderArn
+  DeployRoleArn:
+    Description: >-
+      ARN to set as the GitHub repository variable AWS_ASSUME_ROLE_ARN
+      (Settings > Secrets and variables > Actions > Variables).
+    Value: !GetAtt GitHubActionsDeployRole.Arn
