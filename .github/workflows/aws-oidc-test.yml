@@ -7,7 +7,7 @@
 #   AWS_REGION          - e.g. us-east-1
 #   AWS_ASSUME_ROLE_ARN - value of the DeployRoleArn stack output
 # See infra/aws/README.md for the provisioning walkthrough.
-name: AWS OIDC Federation Test (task 4.3)
+name: AWS OIDC Federation Test
 
 on:
   workflow_dispatch:

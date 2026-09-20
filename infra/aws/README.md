@@ -87,7 +87,7 @@ Repo → **Settings → Secrets and variables → Actions → Variables** → ad
 ## Step 4 — Prove it (task 4.3 validation)
 
 1. Commit + push these three files (the template, the probe workflow, this README).
-2. Actions tab → select **AWS OIDC Federation Test (task 4.3)** → **Run workflow**.
+2. Actions tab → select **AWS OIDC Federation Test** → **Run workflow**.
 3. Open the run log: the **Print the assumed identity** step must print an ARN ending in
    `role/github-actions-devsecops-deploy`, with no `AccessDenied`.
 

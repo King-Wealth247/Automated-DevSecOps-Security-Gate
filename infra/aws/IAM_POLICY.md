@@ -106,7 +106,7 @@ just an identifier, so a repository *variable* is correct, not a *secret*.
 
 ### Step 7 — Verify
 
-Run the `AWS OIDC Federation Test (task 4.3)` workflow
+Run the `AWS OIDC Federation Test` workflow
 (`.github/workflows/aws-oidc-test.yml`) from the Actions tab
 (**Run workflow**). Its `Print the assumed identity` step should print an
 ARN ending in `role/github-actions-devsecops-deploy` with no
