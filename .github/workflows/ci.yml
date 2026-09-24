@@ -55,6 +55,16 @@ jobs:
       - name: Install dependencies
         run: npm install --legacy-peer-deps --ignore-scripts
 
+      # --ignore-scripts above is blanket -- it also skips sqlite3's own
+      # install script (which fetches/builds its native binding), not just
+      # juice-shop's postinstall. Confirmed live (test/api/*.test.ts failing
+      # with "Could not locate the bindings file... node_sqlite3.node") and
+      # locally. `npm rebuild` (no args) re-triggers the ROOT postinstall
+      # too (confirmed locally: identical sbom failure, exit 254) -- naming
+      # the package targets only its own install script, not the project's.
+      - name: Rebuild native dependencies (sqlite3)
+        run: npm rebuild sqlite3
+
       - name: Install frontend dependencies
         working-directory: juice-shop/frontend
         run: npm install --legacy-peer-deps
