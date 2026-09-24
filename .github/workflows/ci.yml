@@ -42,12 +42,21 @@ jobs:
       # juice-shop/frontend/.npmrc both set `package-lock=false` deliberately
       # (floating latest deps on every install), so there's no lockfile to
       # regenerate. --legacy-peer-deps uses npm's older, non-crashing peer
-      # resolution and is confirmed locally to fix it end-to-end (root
-      # install -> nested frontend postinstall -> Angular build all succeed)
-      # -- it propagates into the nested `cd frontend && npm install` via
-      # npm's own env-var config inheritance, so no juice-shop/ file needs
-      # to change.
+      # resolution and fixes it end-to-end.
+      #
+      # --ignore-scripts: juice-shop/package.json's own "postinstall" script
+      # normally chains the ENTIRE frontend install + build + sbom + server
+      # build as an automatic side effect of this one step (confirmed live,
+      # run at 2026-09-24T14:49: the sbom fix below was completely
+      # unreachable because the job already failed inside postinstall,
+      # before any later step ever ran). Disabling it here and running each
+      # stage explicitly below is what actually makes the sbom compatibility
+      # fix reachable, not just correct on paper.
       - name: Install dependencies
+        run: npm install --legacy-peer-deps --ignore-scripts
+
+      - name: Install frontend dependencies
+        working-directory: juice-shop/frontend
         run: npm install --legacy-peer-deps
 
       # frontend/package.json's own "build" script chains
