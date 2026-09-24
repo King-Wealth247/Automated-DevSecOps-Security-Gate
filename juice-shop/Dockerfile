@@ -14,9 +14,22 @@ RUN npm install -g typescript@^6.0.3
 # each stage run explicitly with a stats.json compatibility alias.
 RUN npm install --omit=dev --ignore-scripts
 RUN npm rebuild sqlite3
-RUN cd frontend && npm install --legacy-peer-deps
-RUN cd frontend && npx ng build --configuration production
-RUN cp frontend/dist/frontend/browser-stats.json frontend/dist/frontend/stats.json && cd frontend && npm run sbom
+
+WORKDIR /juice-shop/frontend
+# --ignore-scripts is deliberately NOT added here (flagged by SonarQube
+# docker:S6505) -- frontend has its own native-dependent packages (e.g.
+# sass-embedded), and blanket-disabling their lifecycle scripts is exactly
+# what broke sqlite3's binding above; only the ROOT project's own
+# postinstall needed disabling, not every dependency's own install step.
+RUN npm install --legacy-peer-deps
+# Direct binary path, not `npx ng` (docker:S6505 -- npx can install
+# on-demand) -- @angular/cli is already a local devDependency from the
+# install above, so this never needs to fetch anything; invoking the
+# binary directly removes that ambiguity entirely rather than relying on
+# npx never needing to.
+RUN ./node_modules/.bin/ng build --configuration production
+RUN cp dist/frontend/browser-stats.json dist/frontend/stats.json && npm run sbom
+WORKDIR /juice-shop
 # `|| true`: the original postinstall already wrapped this exact call as
 # `(npm run --silent build:server || cd .)` -- --omit=dev means @types/*
 # packages are absent, so tsc genuinely errors type-checking
