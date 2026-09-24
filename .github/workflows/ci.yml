@@ -50,8 +50,35 @@ jobs:
       - name: Install dependencies
         run: npm install --legacy-peer-deps
 
-      - name: Build
-        run: npm run build
+      # frontend/package.json's own "build" script chains
+      # `ng build && npm run sbom` atomically, which would let a broken sbom
+      # step (see next step) mask a real Angular build failure just as
+      # easily as it lets a real one propagate -- call the Angular build on
+      # its own so each concern fails independently and visibly.
+      - name: Build frontend
+        working-directory: juice-shop/frontend
+        run: npx ng build --configuration production
+
+      # @angular/build 22.1+ renamed the esbuild metafile it emits from
+      # stats.json to browser-stats.json (confirmed locally: installed
+      # @angular/build 22.2.0 emits dist/frontend/browser-stats.json, not
+      # stats.json), breaking frontend/package.json's "sbom" script, which
+      # still hardcodes the old name -- reproduced live (run at
+      # 2026-09-24T13:04) and locally with an identical
+      # "Error: Missing metafile: dist/frontend/stats.json". juice-shop/'s
+      # floating deps (package-lock=false, deliberate upstream choice) mean
+      # this kind of drift can recur; fixed via a compatibility alias here
+      # rather than editing juice-shop/'s own script, matching how the
+      # earlier npm install crash was fixed at the CI-invocation level
+      # rather than inside the vendored app.
+      - name: Generate frontend SBOM
+        working-directory: juice-shop/frontend
+        run: |
+          cp dist/frontend/browser-stats.json dist/frontend/stats.json
+          npm run sbom
+
+      - name: Build server
+        run: npm run build:server
 
       - name: Test
         run: npm test
