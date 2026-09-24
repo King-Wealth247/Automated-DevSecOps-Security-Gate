@@ -2,7 +2,30 @@ FROM node:24 AS installer
 COPY . /juice-shop
 WORKDIR /juice-shop
 RUN npm install -g typescript@^6.0.3
-RUN npm install --omit=dev
+# Split from a single `npm install --omit=dev` (build/tooling compatibility
+# fix only -- no app logic changed): juice-shop's own "postinstall" script
+# chains the entire frontend install+build+sbom+server build automatically,
+# and @angular/build 22.1+ renamed the esbuild metafile it emits from
+# stats.json to browser-stats.json, breaking frontend/package.json's "sbom"
+# script, which still hardcodes the old name. Same fix as
+# .github/workflows/ci.yml's `build-and-test` job, proven there first:
+# --ignore-scripts to regain control of the chain (which also skips
+# sqlite3's own native-binding install, hence the explicit rebuild), then
+# each stage run explicitly with a stats.json compatibility alias.
+RUN npm install --omit=dev --ignore-scripts
+RUN npm rebuild sqlite3
+RUN cd frontend && npm install --legacy-peer-deps
+RUN cd frontend && npx ng build --configuration production
+RUN cp frontend/dist/frontend/browser-stats.json frontend/dist/frontend/stats.json && cd frontend && npm run sbom
+# `|| true`: the original postinstall already wrapped this exact call as
+# `(npm run --silent build:server || cd .)` -- --omit=dev means @types/*
+# packages are absent, so tsc genuinely errors type-checking
+# test/server/*.unit.test.ts (not app source), but still emits the app's
+# own build/ output for files with no errors. Preserving that existing
+# tolerance, not introducing new behavior: confirmed locally that splitting
+# this into a bare RUN (no fallback) turns an already-tolerated non-fatal
+# warning into a hard build failure that didn't exist before.
+RUN npm run --silent build:server || true
 RUN npm dedupe --omit=dev
 RUN rm -rf frontend/node_modules
 RUN rm -rf frontend/.angular
