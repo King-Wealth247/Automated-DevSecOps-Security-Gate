@@ -13,6 +13,15 @@ on:
           gate's verdict on Juice Shop's own code.
         type: boolean
         default: false
+      simulate_broken_slack:
+        description: >-
+          Send the Slack notification to a deliberately invalid webhook URL
+          (SRS S12 negative case): the Notify Slack step must fail LOUDLY
+          (warning annotation + red step) while the gate decision, the
+          policy-gate job, and PASS-gated downstream jobs are unaffected.
+          Needs no secret and never touches the real webhook.
+        type: boolean
+        default: false
 
 jobs:
   build-and-test:
@@ -65,9 +74,15 @@ jobs:
       - name: Rebuild native dependencies (sqlite3)
         run: npm rebuild sqlite3
 
+      # --ignore-scripts: not required to fix anything here (this step
+      # already worked), applied for the same supply-chain reason it was
+      # added to the Dockerfile's frontend install -- verified frontend's
+      # only platform-specific package (sass-embedded) has no install
+      # script at all, so this closes off ~700 packages' arbitrary
+      # lifecycle-script execution at no cost.
       - name: Install frontend dependencies
         working-directory: juice-shop/frontend
-        run: npm install --legacy-peer-deps
+        run: npm install --legacy-peer-deps --ignore-scripts
 
       # frontend/package.json's own "build" script chains
       # `ng build && npm run sbom` atomically, which would let a broken sbom
@@ -102,11 +117,20 @@ jobs:
       - name: Test
         run: npm test
 
+  # Build ONCE. trivy-scan scans this exact image and publish pushes this exact
+  # image (FR-23/24, SEC-06): both load it from the artifact below and verify
+  # its image ID against `outputs.image_id`. Previously each of the three jobs
+  # rebuilt the Dockerfile independently -- and since juice-shop deliberately
+  # floats its dependencies (package-lock=false, node:24 tag), the image Trivy
+  # scanned was not guaranteed to be the image that got published.
   docker-build:
     name: Build Docker Image (Juice Shop)
     runs-on: ubuntu-latest
     needs: build-and-test
     timeout-minutes: 20
+
+    outputs:
+      image_id: ${{ steps.build.outputs.image_id }}
 
     steps:
       - name: Checkout
@@ -118,7 +142,27 @@ jobs:
           echo "IMAGE_TAG=ghcr.io/$OWNER_LC/juice-shop:${{ github.sha }}" >> "$GITHUB_ENV"
 
       - name: Build Docker image
-        run: docker build -f juice-shop/Dockerfile -t "$IMAGE_TAG" juice-shop
+        id: build
+        run: |
+          docker build -f juice-shop/Dockerfile -t "$IMAGE_TAG" juice-shop
+          IMAGE_ID=$(docker image inspect --format '{{.Id}}' "$IMAGE_TAG")
+          echo "Built $IMAGE_TAG -> $IMAGE_ID"
+          echo "image_id=$IMAGE_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Save the image for the scan and publish jobs
+        run: |
+          set -o pipefail
+          docker save "$IMAGE_TAG" | gzip -1 > juice-shop-image.tar.gz
+          ls -lh juice-shop-image.tar.gz
+
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: juice-shop-image
+          path: juice-shop-image.tar.gz
+          retention-days: 1
+          compression-level: 0
+          if-no-files-found: error
 
   gitleaks-scan:
     name: Gitleaks (Secrets Scan)
@@ -199,8 +243,24 @@ jobs:
           OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           echo "IMAGE_TAG=ghcr.io/$OWNER_LC/juice-shop:${{ github.sha }}" >> "$GITHUB_ENV"
 
-      - name: Build Docker image
-        run: docker build -f juice-shop/Dockerfile -t "$IMAGE_TAG" juice-shop
+      - name: Download the image docker-build built
+        uses: actions/download-artifact@v4
+        with:
+          name: juice-shop-image
+
+      - name: Load image and verify it is exactly the image docker-build built
+        env:
+          EXPECTED_IMAGE_ID: ${{ needs.docker-build.outputs.image_id }}
+        run: |
+          set -o pipefail
+          gunzip -c juice-shop-image.tar.gz | docker load
+          ACTUAL=$(docker image inspect --format '{{.Id}}' "$IMAGE_TAG")
+          echo "loaded:   $ACTUAL"
+          echo "expected: $EXPECTED_IMAGE_ID"
+          if [ "$ACTUAL" != "$EXPECTED_IMAGE_ID" ]; then
+            echo "::error::Image ID mismatch -- refusing to scan an image that is not the one docker-build produced"
+            exit 1
+          fi
 
       - name: Run Trivy vulnerability scan
         uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
@@ -328,20 +388,55 @@ jobs:
       # "Run Security Policy Engine" step above already set that via its own
       # exit code) -- hence continue-on-error here, and skipped entirely
       # (not a noisy failure) when SLACK_WEBHOOK_URL isn't set.
+      #
+      # A broken webhook must also be LOGGED, not swallowed: plain `curl -sS`
+      # exits 0 on an HTTP 401/404 from Slack, so a dead webhook would have
+      # left this step green and nobody the wiser. This step therefore checks
+      # the HTTP status itself, annotates the run with a warning, and fails
+      # (red step, job still green via continue-on-error).
+      # `simulate_broken_slack` (workflow_dispatch only) proves that live
+      # without touching the real webhook or needing any secret.
       - name: Notify Slack
-        if: ${{ always() && env.SLACK_WEBHOOK_URL != '' }}
+        if: ${{ always() && (env.SLACK_WEBHOOK_URL != '' || inputs.simulate_broken_slack == true) }}
         continue-on-error: true
         env:
           DECISION: ${{ steps.decision.outputs.decision }}
+          SIMULATE_BROKEN_SLACK: ${{ inputs.simulate_broken_slack }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          curl -sS -X POST -H 'Content-type: application/json' \
-            --data "{\"text\":\"DevSecOps Security Gate: ${DECISION} -- ${{ github.repository }} @ ${{ github.sha }} (run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\"}" \
-            "$SLACK_WEBHOOK_URL"
+          URL="$SLACK_WEBHOOK_URL"
+          if [ "$SIMULATE_BROKEN_SLACK" = "true" ]; then
+            echo "::notice::simulate_broken_slack=true -- posting to a deliberately invalid webhook URL"
+            URL="https://hooks.slack.com/services/T00000000/B00000000/INVALIDINVALIDINVALID"
+          fi
+          PAYLOAD=$(printf '{"text":"DevSecOps Security Gate: %s -- %s @ %s (run: %s)"}' "$DECISION" "$REPO" "$SHA" "$RUN_URL")
+          rm -f slack-response.txt
+          HTTP_CODE=$(curl -sS --max-time 20 -o slack-response.txt -w '%{http_code}' \
+            -X POST -H 'Content-type: application/json' --data "$PAYLOAD" "$URL") || HTTP_CODE="curl-error"
+          case "$HTTP_CODE" in
+            2??)
+              echo "Slack notification sent (HTTP $HTTP_CODE)"
+              echo "- Slack notification: sent (HTTP $HTTP_CODE)" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+              ;;
+            curl-error)
+              REASON="could not reach the webhook (see the curl error above)"
+              ;;
+            *)
+              BODY=$(head -c 200 slack-response.txt 2>/dev/null | tr -d '\r\n')
+              REASON="HTTP $HTTP_CODE from the webhook (${BODY})"
+              ;;
+          esac
+          echo "::warning title=Slack notification failed::${REASON}. The gate decision (${DECISION}) and downstream jobs are unaffected."
+          echo "- Slack notification: FAILED -- ${REASON}; gate decision ${DECISION} unaffected" >> "$GITHUB_STEP_SUMMARY"
+          exit 1
 
   publish:
     name: Publish to GHCR (PASS only)
     runs-on: ubuntu-latest
-    needs: policy-gate
+    needs: [policy-gate, docker-build]
     # Runs only on a genuine PASS. On BLOCK the policy-gate job FAILS
     # (policy_engine.py exits 1), so this job is skipped automatically before
     # its `if:` is even consulted -- a BLOCKed run can never push a tag.
@@ -352,16 +447,32 @@ jobs:
       packages: write
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Compute image tag
         run: |
           OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           echo "IMAGE_TAG=ghcr.io/$OWNER_LC/juice-shop:${{ github.sha }}" >> "$GITHUB_ENV"
 
-      - name: Build Docker image
-        run: docker build -f juice-shop/Dockerfile -t "$IMAGE_TAG" juice-shop
+      # Push the image docker-build built and trivy-scan scanned -- NOT a fresh
+      # rebuild (FR-23/24, SEC-06): the identity check below refuses to publish
+      # anything else.
+      - name: Download the image docker-build built
+        uses: actions/download-artifact@v4
+        with:
+          name: juice-shop-image
+
+      - name: Load image and verify it is exactly the image that was scanned
+        env:
+          EXPECTED_IMAGE_ID: ${{ needs.docker-build.outputs.image_id }}
+        run: |
+          set -o pipefail
+          gunzip -c juice-shop-image.tar.gz | docker load
+          ACTUAL=$(docker image inspect --format '{{.Id}}' "$IMAGE_TAG")
+          echo "loaded:   $ACTUAL"
+          echo "expected: $EXPECTED_IMAGE_ID"
+          if [ "$ACTUAL" != "$EXPECTED_IMAGE_ID" ]; then
+            echo "::error::Image ID mismatch -- refusing to publish an image that is not the one that was scanned"
+            exit 1
+          fi
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -371,7 +482,12 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push image to GHCR
-        run: docker push "$IMAGE_TAG"
+        env:
+          IMAGE_ID: ${{ needs.docker-build.outputs.image_id }}
+        run: |
+          docker push "$IMAGE_TAG"
+          DIGEST=$(docker image inspect --format '{{index .RepoDigests 0}}' "$IMAGE_TAG" 2>/dev/null || echo "n/a")
+          echo "- Published \`$IMAGE_TAG\` -- image id \`$IMAGE_ID\` (identical to the scanned image), registry digest \`$DIGEST\`" >> "$GITHUB_STEP_SUMMARY"
 
   deploy-flyio-temp:
     name: Deploy to Fly.io (TEMPORARY - AWS OIDC blocked, task 4.3)
@@ -449,4 +565,40 @@ jobs:
         with:
           name: pass-rehearsal-report
           path: security-policy/reports/pass-rehearsal-report.md
+          if-no-files-found: error
+
+  policy-gate-negative-rehearsal:
+    name: Security Policy Gate - Fail-Closed & Determinism Rehearsal (AC-05/AC-06)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install engine dependencies
+        run: pip install -r security-policy/requirements.txt
+
+      # AC-05 / FR-30 / NFR-03: a missing, malformed or unreachable input must
+      # BLOCK ("fail closed"), never pass. AC-06 / FR-15: identical inputs give
+      # an identical decision on 3 consecutive runs. The script asserts both
+      # through the real CLI -- this job goes red if ANY guarantee is violated.
+      # Needs no secrets and no network (the "unreachable SonarQube" case aims
+      # at a closed localhost port). Manually triggered only, like the PASS
+      # rehearsal, so it never runs on push/PR.
+      - name: Rehearse fail-closed and deterministic behavior
+        run: bash security-policy/scripts/rehearse-negative-cases.sh security-policy/reports/negative-rehearsal
+
+      - name: Upload rehearsal evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: negative-rehearsal-evidence
+          path: security-policy/reports/negative-rehearsal
           if-no-files-found: error

@@ -16,6 +16,7 @@ import argparse
 import json
 import os
 import sys
+from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -98,6 +99,10 @@ def main(argv: list[str] | None = None) -> int:
         marker = "[BLOCK]" if r.blocked else "[OK]"
         allowed_display = "unlimited" if r.allowed is None else r.allowed
         print(f"  {marker} {r.label}: {r.count} found, {allowed_display} allowed")
+    # Lets a live log prove all three adapters actually contributed (a scanner
+    # silently contributing 0 would otherwise be indistinguishable from clean).
+    by_tool = Counter(f.tool for f in result.findings)
+    print("  findings by tool: " + ", ".join(f"{t}={by_tool.get(t, 0)}" for t in ("gitleaks", "trivy", "sonarqube")))
 
     return 0 if result.passed else 1
 

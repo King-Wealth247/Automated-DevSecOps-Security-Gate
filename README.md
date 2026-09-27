@@ -112,11 +112,33 @@ An exit code of `0` means PASS; a non-zero exit code means BLOCK.
 
 ## Running Tests
 
-Fixture-based test data lives under `security-policy/tests/fixtures/`. See [`IMPLEMENTATION_PLAN.md`](./IMPLEMENTATION_PLAN.md) for the planned automated policy/integration test suite.
+Fixture-based test data lives under `security-policy/tests/fixtures/`. The policy engine's unit tests run with:
+
+```bash
+pip install -r security-policy/requirements.txt pytest
+python -m pytest security-policy/tests -q
+```
+
+The engine's negative-path guarantees (fail-closed on missing/malformed/unreachable input, deterministic re-evaluation) can also be rehearsed end to end through the real CLI — no secrets or network needed:
+
+```bash
+bash security-policy/scripts/rehearse-negative-cases.sh
+```
+
+See [`IMPLEMENTATION_PLAN.md`](./IMPLEMENTATION_PLAN.md) for the full test/acceptance-criteria status.
 
 ## CI/CD & Deployment
 
-On every push or pull request, the pipeline is intended to: build and test Juice Shop → build its Docker image → run all three scanners in parallel → evaluate the combined findings against policy → on PASS, publish to GHCR and deploy to a single AWS EC2 test instance via an OIDC-federated IAM role (no long-lived AWS credentials); on BLOCK, stop the pipeline. Every run generates a human-readable security report (pipeline artifact) and a Slack notification. See `IMPLEMENTATION_PLAN.md` for what is currently implemented versus planned.
+On every push or pull request, the pipeline is intended to: build and test Juice Shop → build its Docker image **once** → run all three scanners in parallel (Trivy scans that exact image) → evaluate the combined findings against policy → on PASS, publish that same image to GHCR (its image ID is verified against the scanned one) and deploy to a single AWS EC2 test instance via an OIDC-federated IAM role (no long-lived AWS credentials); on BLOCK, stop the pipeline. Every run generates a human-readable security report (pipeline artifact) and a Slack notification. See `IMPLEMENTATION_PLAN.md` for what is currently implemented versus planned.
+
+**Manual rehearsals** (Actions → CI → *Run workflow*; never triggered by push/PR):
+
+| Input / job | What it demonstrates |
+|---|---|
+| `use_clean_fixtures: true` | The real gate job evaluating clean fixtures → `PASS` → GHCR publish (AC-01/AC-04). Juice Shop itself can never PASS by design. |
+| `simulate_broken_slack: true` | A deliberately invalid Slack webhook: the notify step fails loudly (warning + red step) while the gate decision and downstream jobs are unaffected (SRS §12). |
+| `policy-gate-pass-rehearsal` job | Runs on every manual dispatch: engine + `policy.yaml` against clean fixtures → `PASS`. |
+| `policy-gate-negative-rehearsal` job | Runs on every manual dispatch: fail-closed on bad input (AC-05) and 3× deterministic re-evaluation (AC-06); goes red if any guarantee is violated. |
 
 ## Project Status
 

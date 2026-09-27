@@ -16,12 +16,16 @@ RUN npm install --omit=dev --ignore-scripts
 RUN npm rebuild sqlite3
 
 WORKDIR /juice-shop/frontend
-# --ignore-scripts is deliberately NOT added here (flagged by SonarQube
-# docker:S6505) -- frontend has its own native-dependent packages (e.g.
-# sass-embedded), and blanket-disabling their lifecycle scripts is exactly
-# what broke sqlite3's binding above; only the ROOT project's own
-# postinstall needed disabling, not every dependency's own install step.
-RUN npm install --legacy-peer-deps
+# --ignore-scripts here too (closes docker:S6505 on this line for real,
+# not just documented around): re-checked the earlier assumption that
+# frontend needs lifecycle scripts for native deps rather than repeating
+# it -- frontend's only platform-specific package, sass-embedded, has no
+# install/postinstall script at all (checked its package.json directly);
+# it ships one npm package per platform via optionalDependencies, which
+# npm resolves natively at install time regardless of --ignore-scripts.
+# Verified empirically, not assumed: full clean-state install -> build ->
+# sbom all succeed identically with this flag present.
+RUN npm install --legacy-peer-deps --ignore-scripts
 # Direct binary path, not `npx ng` (docker:S6505 -- npx can install
 # on-demand) -- @angular/cli is already a local devDependency from the
 # install above, so this never needs to fetch anything; invoking the
