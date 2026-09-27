@@ -460,6 +460,40 @@ jobs:
             echo "publish's if: would evaluate FALSE -- this is why it was skipped"
           fi
 
+  # TEMPORARY (2026-09-27, round 2): `publish-gate-diagnostics` above proved
+  # the *data* is correct (needs.policy-gate.outputs.decision literally
+  # 'PASS', both needs `success`) -- but it tested that with a bash `if`,
+  # which is a different GitHub Actions code path from the job-level `if:`
+  # scheduler that actually gates `publish`. These two canaries isolate
+  # whether the SCHEDULER's own evaluation of that exact expression is what's
+  # broken, and whether wrapping it in `${{ }}` changes the outcome:
+  #   - publish-if-canary: publish's *exact* needs + if:, trivial steps, no
+  #     permissions/docker calls -- rules out whether something about
+  #     publish's other job properties (not the if: itself) is the cause.
+  #   - publish-if-canary-wrapped: the same condition explicitly wrapped in
+  #     ${{ }} -- some historical GitHub Actions bugs around bare vs.
+  #     templated job-level `if:` conditions were fixed exactly this way.
+  # Remove both once the cause is confirmed (see IMPLEMENTATION_PLAN.md §20).
+  publish-if-canary:
+    name: Canary - bare if (temporary)
+    runs-on: ubuntu-latest
+    needs: [policy-gate, docker-build]
+    if: needs.policy-gate.outputs.decision == 'PASS'
+    timeout-minutes: 2
+    steps:
+      - name: Canary ran
+        run: echo "publish-if-canary ran -- the bare job-level if-condition evaluated true"
+
+  publish-if-canary-wrapped:
+    name: Canary - templated if (temporary)
+    runs-on: ubuntu-latest
+    needs: [policy-gate, docker-build]
+    if: ${{ needs.policy-gate.outputs.decision == 'PASS' }}
+    timeout-minutes: 2
+    steps:
+      - name: Canary ran
+        run: echo "publish-if-canary-wrapped ran -- the wrapped job-level if-condition evaluated true"
+
   publish:
     name: Publish to GHCR (PASS only)
     runs-on: ubuntu-latest
