@@ -460,48 +460,59 @@ jobs:
             echo "publish's if: would evaluate FALSE -- this is why it was skipped"
           fi
 
-  # TEMPORARY (2026-09-27, round 2): `publish-gate-diagnostics` above proved
-  # the *data* is correct (needs.policy-gate.outputs.decision literally
-  # 'PASS', both needs `success`) -- but it tested that with a bash `if`,
-  # which is a different GitHub Actions code path from the job-level `if:`
-  # scheduler that actually gates `publish`. These two canaries isolate
-  # whether the SCHEDULER's own evaluation of that exact expression is what's
-  # broken, and whether wrapping it in `${{ }}` changes the outcome:
-  #   - publish-if-canary: publish's *exact* needs + if:, trivial steps, no
-  #     permissions/docker calls -- rules out whether something about
-  #     publish's other job properties (not the if: itself) is the cause.
-  #   - publish-if-canary-wrapped: the same condition explicitly wrapped in
-  #     ${{ }} -- some historical GitHub Actions bugs around bare vs.
-  #     templated job-level `if:` conditions were fixed exactly this way.
-  # Remove both once the cause is confirmed (see IMPLEMENTATION_PLAN.md §20).
-  publish-if-canary:
-    name: Canary - bare if (temporary)
+  # TEMPORARY (2026-09-27, round 3): round 2's two canaries answered their
+  # own question -- bare vs. ${{ }}-wrapped made no difference, both were
+  # skipped identically alongside the real `publish`. Root cause found:
+  # GitHub Actions silently adds an implicit `&& success()` (checked across
+  # the WHOLE ancestor chain, not just direct `needs`) to any `if:` that
+  # doesn't itself call always()/success()/failure()/cancelled() -- and
+  # `sonarqube-scan` (a transitive dependency via `policy-gate`) fails
+  # repeatedly. `publish`/`deploy-flyio-temp` now use the `!cancelled()`
+  # pattern below to fix that (see their own comments). This single canary
+  # mirrors that exact fixed pattern for a direct, disposable confirmation
+  # alongside the real fix in the same run. Remove once confirmed (see
+  # IMPLEMENTATION_PLAN.md §20).
+  publish-if-canary-fixed:
+    name: Canary - fixed if (temporary)
     runs-on: ubuntu-latest
     needs: [policy-gate, docker-build]
-    if: needs.policy-gate.outputs.decision == 'PASS'
+    if: ${{ !cancelled() && needs.policy-gate.result == 'success' && needs.docker-build.result == 'success' && needs.policy-gate.outputs.decision == 'PASS' }}
     timeout-minutes: 2
     steps:
       - name: Canary ran
-        run: echo "publish-if-canary ran -- the bare job-level if-condition evaluated true"
-
-  publish-if-canary-wrapped:
-    name: Canary - templated if (temporary)
-    runs-on: ubuntu-latest
-    needs: [policy-gate, docker-build]
-    if: ${{ needs.policy-gate.outputs.decision == 'PASS' }}
-    timeout-minutes: 2
-    steps:
-      - name: Canary ran
-        run: echo "publish-if-canary-wrapped ran -- the wrapped job-level if-condition evaluated true"
+        run: echo "publish-if-canary-fixed ran -- the fixed condition correctly tolerated the sonarqube-scan failure"
 
   publish:
     name: Publish to GHCR (PASS only)
     runs-on: ubuntu-latest
     needs: [policy-gate, docker-build]
-    # Runs only on a genuine PASS. On BLOCK the policy-gate job FAILS
-    # (policy_engine.py exits 1), so this job is skipped automatically before
-    # its `if:` is even consulted -- a BLOCKed run can never push a tag.
-    if: needs.policy-gate.outputs.decision == 'PASS'
+    # Root cause of a real, confirmed bug (2026-09-27/28, see
+    # IMPLEMENTATION_PLAN.md §20): a job's `if:` gets an INVISIBLE, extra
+    # `&& success()` added by GitHub Actions unless the condition itself
+    # calls always()/success()/failure()/cancelled() -- and that success()
+    # checks the WHOLE ancestor chain, not just this job's own `needs`.
+    # `sonarqube-scan` fails repeatedly (the long-standing new_security_rating
+    # Quality Gate issue), and even though `policy-gate` shields ITSELF from
+    # that with its own `if: always()` and correctly outputs decision=PASS,
+    # the invisible check further downstream still saw the transitive
+    # sonarqube-scan failure and silently skipped this job regardless of the
+    # real decision -- proven with two isolated canary jobs (bare and
+    # ${{ }}-wrapped forms of the old condition both skipped identically;
+    # only the always()-shielded diagnostic job ran).
+    #
+    # Fix: `!cancelled()` is GitHub's own idiom for "tolerate upstream
+    # FAILURES, but still respect an actual cancellation of the run" --
+    # chosen over `always()` specifically because `always()` would also let
+    # this job run through a genuine workflow cancellation, which is not
+    # acceptable for a step that pushes to a registry. The explicit
+    # `needs.*.result == 'success'` checks restore the normal "my direct
+    # dependencies must have succeeded" requirement that `!cancelled()`
+    # otherwise bypasses, so a real `docker-build` failure (or the run being
+    # cancelled) still cleanly skips this job instead of letting it through
+    # to fail later on a missing artifact. The actual security gate --
+    # `decision == 'PASS'` -- is unchanged: a BLOCK, a missing/malformed
+    # report, or a cancelled run all still correctly skip publish.
+    if: ${{ !cancelled() && needs.policy-gate.result == 'success' && needs.docker-build.result == 'success' && needs.policy-gate.outputs.decision == 'PASS' }}
     timeout-minutes: 20
     permissions:
       contents: read
@@ -554,10 +565,13 @@ jobs:
     name: Deploy to Fly.io (TEMPORARY - AWS OIDC blocked, task 4.3)
     runs-on: ubuntu-latest
     needs: [policy-gate, publish]
-    # Same PASS-only gate as `publish` (FR-25 analog). `needs: publish` also
-    # means this is skipped automatically whenever publish is (i.e. on
-    # BLOCK), since a skipped dependency skips its dependents by default.
-    if: needs.policy-gate.outputs.decision == 'PASS'
+    # Same PASS-only gate as `publish` (FR-25 analog), and the identical
+    # transitive-success bug fix applied there (see that job's comment and
+    # IMPLEMENTATION_PLAN.md §20) -- `needs.publish.result == 'success'`
+    # takes over the "skipped automatically whenever publish is" role that a
+    # bare `if:` used to get for free, since `!cancelled()` bypasses that
+    # default too and it must be restored explicitly.
+    if: ${{ !cancelled() && needs.policy-gate.result == 'success' && needs.publish.result == 'success' && needs.policy-gate.outputs.decision == 'PASS' }}
     timeout-minutes: 10
 
     steps:
