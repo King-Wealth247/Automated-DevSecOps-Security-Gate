@@ -433,55 +433,6 @@ jobs:
           echo "- Slack notification: FAILED -- ${REASON}; gate decision ${DECISION} unaffected" >> "$GITHUB_STEP_SUMMARY"
           exit 1
 
-  # TEMPORARY (2026-09-27): run 36343387712 showed `publish` skipped even
-  # though `policy-gate` (success) genuinely output decision=PASS and
-  # `docker-build` also succeeded -- exactly the two things `publish`'s own
-  # `if:` checks. This job shares the identical `needs`/`if: always()` shape
-  # so it always runs and prints exactly what the `needs` context resolves
-  # to, to settle whether that was a one-off scheduler race or something
-  # real. Remove once the cause is confirmed (see IMPLEMENTATION_PLAN.md
-  # §20).
-  publish-gate-diagnostics:
-    name: Diagnose publish gating (temporary)
-    runs-on: ubuntu-latest
-    needs: [policy-gate, docker-build]
-    if: always()
-    timeout-minutes: 2
-    steps:
-      - name: Print what publish's needs context resolves to
-        run: |
-          echo "policy-gate.result:            ${{ needs.policy-gate.result }}"
-          echo "policy-gate.outputs.decision:  '${{ needs.policy-gate.outputs.decision }}'"
-          echo "docker-build.result:           ${{ needs.docker-build.result }}"
-          echo "docker-build.outputs.image_id: '${{ needs.docker-build.outputs.image_id }}'"
-          if [ "${{ needs.policy-gate.outputs.decision }}" = "PASS" ]; then
-            echo "publish's if: would evaluate TRUE -- it should have run"
-          else
-            echo "publish's if: would evaluate FALSE -- this is why it was skipped"
-          fi
-
-  # TEMPORARY (2026-09-27, round 3): round 2's two canaries answered their
-  # own question -- bare vs. ${{ }}-wrapped made no difference, both were
-  # skipped identically alongside the real `publish`. Root cause found:
-  # GitHub Actions silently adds an implicit `&& success()` (checked across
-  # the WHOLE ancestor chain, not just direct `needs`) to any `if:` that
-  # doesn't itself call always()/success()/failure()/cancelled() -- and
-  # `sonarqube-scan` (a transitive dependency via `policy-gate`) fails
-  # repeatedly. `publish`/`deploy-flyio-temp` now use the `!cancelled()`
-  # pattern below to fix that (see their own comments). This single canary
-  # mirrors that exact fixed pattern for a direct, disposable confirmation
-  # alongside the real fix in the same run. Remove once confirmed (see
-  # IMPLEMENTATION_PLAN.md §20).
-  publish-if-canary-fixed:
-    name: Canary - fixed if (temporary)
-    runs-on: ubuntu-latest
-    needs: [policy-gate, docker-build]
-    if: ${{ !cancelled() && needs.policy-gate.result == 'success' && needs.docker-build.result == 'success' && needs.policy-gate.outputs.decision == 'PASS' }}
-    timeout-minutes: 2
-    steps:
-      - name: Canary ran
-        run: echo "publish-if-canary-fixed ran -- the fixed condition correctly tolerated the sonarqube-scan failure"
-
   publish:
     name: Publish to GHCR (PASS only)
     runs-on: ubuntu-latest
