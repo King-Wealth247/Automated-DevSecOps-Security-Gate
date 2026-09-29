@@ -18,12 +18,17 @@ CI/CD pipelines automate build, test, and deployment — but the decision of whe
 Developer → GitHub (push / PR)
     → GitHub Actions
         → Build / Test
-        → Docker image build (Juice Shop)
+        → Docker image build (Juice Shop, built once)
         → Security Scanners (parallel: Gitleaks · SonarQube Cloud · Trivy)
             → Security Policy Engine (normalize → evaluate policy.yaml → decide)
-                → PASS → tag & push image to GHCR → deploy to AWS EC2 → Slack: approved
-                → BLOCK → discard image → Slack: blocked + report
+                → PASS → push the exact scanned image to GHCR → deploy → Slack: notified
+                → BLOCK → image discarded → Slack: notified + report
 ```
+
+For the full component breakdown and design rationale, see
+[`docs/architecture/ARCHITECTURE.md`](./docs/architecture/ARCHITECTURE.md). For the CI/CD
+job graph and the security-decision data flow as diagrams, see
+[`docs/diagrams/`](./docs/diagrams/README.md).
 
 ## Repository Structure
 
@@ -39,7 +44,10 @@ DevSecOps-Pipeline/
 │   └── gitleaks.toml         Gitleaks secret-scanning configuration
 ├── sonar-project.properties SonarQube Cloud scanner configuration
 ├── reports/                Generated scan/security reports (local, gitignored)
+├── infra/                   AWS OIDC + Fly.io deployment infrastructure
 ├── docs/                    Project documentation
+│   ├── architecture/          Component-level architecture writeup
+│   └── diagrams/               Pipeline job graph + decision flow (Mermaid)
 ├── IMPLEMENTATION_PLAN.md   Requirements-to-implementation status and roadmap
 └── README.md
 ```
