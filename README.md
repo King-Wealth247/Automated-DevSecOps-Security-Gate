@@ -28,7 +28,9 @@ Developer → GitHub (push / PR)
 For the full component breakdown and design rationale, see
 [`docs/architecture/ARCHITECTURE.md`](./docs/architecture/ARCHITECTURE.md). For the CI/CD
 job graph and the security-decision data flow as diagrams, see
-[`docs/diagrams/`](./docs/diagrams/README.md).
+[`docs/diagrams/`](./docs/diagrams/README.md). For the evidence behind each SRS
+acceptance criterion, see
+[`docs/ACCEPTANCE_EVIDENCE.md`](./docs/ACCEPTANCE_EVIDENCE.md).
 
 ## Repository Structure
 
